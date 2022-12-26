@@ -1,0 +1,9 @@
+project: atheris
+target: fuzz-patch-code
+testsuite:
+    - file://mayhem/testsuite
+
+cmds:
+  - cmd: /src/mayhem/fuzz_inception.py
+    libfuzzer: true
+    timeout: 8
