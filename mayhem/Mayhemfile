@@ -7,4 +7,3 @@ cmds:
   - cmd: /src/mayhem/fuzz_inception.py
     libfuzzer: true
     timeout: 8
-    max_length: 30000
