@@ -1,0 +1,73 @@
+def ShouldFail(domain):
+  """Returns True for domains that we know are invalid, False otherwise."""
+  if "." not in domain:
+    return True
+  pieces = domain.split(".")
+
+  total_length = len(b".".join([piece.encode("punycode") for piece in pieces]))
+  if total_length > 253:
+    return True
+
+  for piece in pieces:
+    # Iteration over each label in the domain, checking various requirements.
+    if len(piece) == 0:
+      return True
+    if len(piece) > 63:
+      return True
+    if len(piece.encode("punycode")) > 59:
+      return True
+    # Domain labels must not start with a -, end with a -, or have both their
+    # third and fourth characters be --.
+    if piece.startswith("-"):
+      return True
+    if piece.endswith("-"):
+      return True
+    if len(piece) >= 4 and piece[2] == "-" and piece[3] == "-":
+      return True
+    if len(piece) and unicodedata.category(piece[0])[0] == "M":
+      return True
+
+    # Bidirectional checks (ensures that the label follows the "bidi rule"
+    # for IDNA)
+    direction = unicodedata.bidirectional(piece[0])
+    if direction in ["R", "AL"]:
+      rtl = True
+    elif direction == "L":
+      rtl = False
+    else:
+      return True
+    if rtl:
+      has_en = False
+      has_an = False
+      for c in piece:
+        biditype = unicodedata.bidirectional(c)
+        if biditype not in [
+            "R", "AL", "AN", "EN", "ES", "CS", "ET", "ON", "BN", "NSM"
+        ]:
+          return True
+        if biditype == "EN":
+          has_en = True
+        if biditype == "AN":
+          has_an = True
+      if has_en and has_an:
+        return True
+      for i in range(len(piece) - 1, 0 - 1, -1):
+        biditype = unicodedata.bidirectional(piece[i])
+        if biditype in ["R", "AL", "EN", "AN"]:
+          break
+        if biditype != "NSM":
+          return True
+
+    else:
+      for c in piece:
+        if unicodedata.bidirectional(c) not in [
+            "L", "EN", "ES", "CS", "ET", "ON", "BN", "NSM"
+        ]:
+          return True
+      for i in range(len(piece) - 1, 0 - 1, -1):
+        biditype = unicodedata.bidirectional(piece[i])
+        if biditype in ["L", "EN"]:
+          break
+        if biditype != "NSM":
+          return True
+  return False
